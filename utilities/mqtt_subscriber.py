@@ -33,7 +33,7 @@ def on_message(client, userdata, msg):
 
 # Créer un client MQTT
 client = mqtt.Client("DataReceiver")
-client.username_pw_set(username="Harlequin", password="Harlequin0179")
+client.username_pw_set(username="smartfactoryhub", password="smfahu0156")
 client.tls_set()  # Active TLS pour des connexions sécurisées
 
 
