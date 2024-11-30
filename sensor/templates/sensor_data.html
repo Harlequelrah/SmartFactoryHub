@@ -4,19 +4,27 @@
     <meta charset="UTF-8">
     <title>Sensor Data</title>
     <script>
-        const socket = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/');
+    const socket = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/');
 
-        socket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            console.log(data);
-            // Affiche les données de manière plus propre
-            document.getElementById("sensor").innerHTML = JSON.stringify(data.sensor_data, null, 2);
-        };
+    socket.onopen = function() {
+        console.log("Connexion WebSocket établie");
+    };
 
-        socket.onclose = function(e) {
-            console.error('Connection closed!', e);
-        };
-    </script>
+    socket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        console.log("Données reçues via WebSocket :", data);
+        document.getElementById("sensor").innerHTML = JSON.stringify(data.sensor_data, null, 2);
+    };
+
+    socket.onclose = function(e) {
+        console.error('Connexion fermée !', e);
+    };
+
+    socket.onerror = function(error) {
+        console.error('Erreur WebSocket:', error);
+    };
+</script>
+
 </head>
 <body>
     <h1>Real-Time Sensor Data</h1>
