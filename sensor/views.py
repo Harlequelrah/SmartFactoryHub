@@ -1,3 +1,5 @@
 from django.shortcuts import render
 
-# Create your views here.
+
+def sensor_data_view(request):
+    return render(request, "sensor_data.html")

@@ -55,7 +55,7 @@ ROOT_URLCONF = 'SmartFactoryHub.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['sensor/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -70,6 +70,14 @@ TEMPLATES = [
 
 # WSGI_APPLICATION = 'SmartFactoryHub.wsgi.application'
 ASGI_APPLICATION = "SmartFactoryHub.asgi.application"
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 
 # Database

@@ -1,15 +1,10 @@
 import paho.mqtt.client as mqtt
 import json
-import logging
+from channels.layers import get_channel_layer
 
-# Configuration du logger
-logging.basicConfig(level=logging.DEBUG)  # Active les logs de niveau DEBUG
-logger = logging.getLogger()
-
-# Configuration du broker HiveMQ
 BROKER = "broker.hivemq.com"
 PORT = 8883
-TOPIC = "sensor/sensor1"
+TOPIC = "sensor/#"
 
 
 # Fonction callback pour gérer la connexion
@@ -27,35 +22,35 @@ def on_message(client, userdata, msg):
     try:
         message = json.loads(msg.payload.decode("utf-8"))
         print(f"Message JSON: {message}")
+
+        # Utiliser le channel_layer pour envoyer les données à WebSocket
+        channel_layer = get_channel_layer()
+        channel_layer.group_send(
+            "sensor_data",  # Nom du groupe de WebSocket
+            {
+                "type": "send_sensor_data",  # Méthode dans le Consumer
+                "sensor_data": message,  # Données du capteur
+            },
+        )
     except json.JSONDecodeError as e:
         print(f"Erreur de décodage JSON: {e}")
 
 
 # Créer un client MQTT
-client = mqtt.Client(client_id="DataReceiver")
+client = mqtt.Client("SensorReceiver")
 client.username_pw_set(username="smartfactoryhub", password="smfahu0156")
 client.tls_set()  # Active TLS pour des connexions sécurisées
 
-
 # Attacher les callbacks
-
 client.on_connect = on_connect
 client.on_message = on_message
 
-# Activer les logs pour Paho MQTT
-client.enable_logger(logger)
-
 # Tentative de connexion au broker
 print("Tentative de connexion au broker...")
-try:
-    client.connect(BROKER, PORT)
-except Exception as e:
-    print(f"Erreur lors de la connexion : {e}")
+client.connect(BROKER, PORT)
 
 # Démarrer la boucle d'écoute dans un thread séparé
 client.loop_start()
-
-# Attendre que la connexion soit établie et que des messages arrivent
 import time
 
 time.sleep(5)
