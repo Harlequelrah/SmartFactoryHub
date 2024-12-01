@@ -70,7 +70,6 @@ TEMPLATES = [
     },
 ]
 
-# WSGI_APPLICATION = 'SmartFactoryHub.wsgi.application'
 ASGI_APPLICATION = "SmartFactoryHub.asgi.application"
 CHANNEL_LAYERS = {
     "default": {
@@ -94,10 +93,6 @@ DATABASES = {
         'HOST': 'localhost',  # Si MySQL est sur la même machine
         'PORT': '3306',  # Port par défaut pour MySQL
     },
-    'sqlite':{
-        'ENGINE' : 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
 }
 
 LOGIN_URL = "connexion"

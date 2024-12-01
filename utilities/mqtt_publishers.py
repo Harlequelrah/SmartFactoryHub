@@ -20,15 +20,20 @@ client.connect(BROKER, PORT)
 # Démarrer la boucle MQTT dans un thread séparé
 client.loop_start()
 
+
 print("Connexion réussie au broker HiveMQ !")
 def create_sensor(sensor_id):
-        temperature = round(random.uniform(20.0, 30.0), 2)
-        humidity = round(random.uniform(10.0, 30.0), 2)
-        energy = round(random.uniform(20.0, 30.0), 2)
-        luminosity = round(random.uniform(20.0, 30.0), 2)  # Température entre 20 et 30°C
-        pression = random.randint(40, 80)  # Humidité entre 40 et 80%
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-        return [{"humidity":humidity,"sensor_id":sensor_id,"luminosity":luminosity,"energy":energy,"temperature": temperature, "timestamp": timestamp},{"presure": pression, "timestamp": timestamp}][0]
+    sensor_data = {
+        "sensor_id": sensor_id,
+        "temperature": round(random.uniform(20.0, 30.0), 2),
+        "humidity": round(random.uniform(10.0, 30.0), 2),
+        "energy": round(random.uniform(20.0, 30.0), 2),
+        "luminosity": round(random.uniform(20.0, 30.0), 2),
+        "pression": random.randint(40, 80),
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    return sensor_data
+
 
 while True:
     for i in range(1,5):

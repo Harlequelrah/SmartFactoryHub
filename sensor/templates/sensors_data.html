@@ -5,6 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Capteurs Dynamiques</title>
     <script>
+    const logSocket = new WebSocket("ws://localhost:8000/ws/logs/");
+
+    logSocket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        const logMessage = data.log;
+
+        const logContainer = document.getElementById("log-container");
+        const newLog = document.createElement("p");
+        newLog.textContent = logMessage;
+        logContainer.appendChild(newLog);
+    };
+
+    logSocket.onclose = function(event) {
+        console.error("WebSocket fermé : ", event);
+    };
+</script>
+
+
+
+    <script>
         document.addEventListener('DOMContentLoaded', () => {
             const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/');
             const tableBody = document.getElementById('sensor-table-body');
@@ -89,6 +109,7 @@
     </script>
 </head>
 <body>
+    <div id="log-container"></div>
     <h1>Données des Capteurs</h1>
     <table border="1">
         <thead id="sensor-table-head"></thead>
