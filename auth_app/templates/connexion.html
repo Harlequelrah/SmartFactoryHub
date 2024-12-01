@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion</title>
+</head>
+<body>
+    <div class="container">
+        <div class="form">
+            <form method="post" action="{% url 'connexion' %}">
+                {% csrf_token %}
+                <div class="form-header">
+                    <h1>Connexion</h1>
+                    <p>Connectez-vous à votre compte</p>
+                </div>
+                {% if messages %}
+                <div class="error-messages">
+                    {% for message in messages %}
+                    <p class="error">{{ message }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <label for="username">Nom d'utilisateur</label>
+                <input type="text" name="username" required>
+                <label for="password">Mot de passe</label>
+                <input type="password" name="password" required>
+                <button type="submit">
+                    <span>Se connecter</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+            <p class="link">Pas encore inscrit ? <a href="{% url 'inscription' %}">S'inscrire</a></p>
+        </div>
+    </div>
+    <div class="background">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            width: 100%;
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .background {
+            position: absolute;
+            width: 100%;
+            height: 100vh;
+            z-index: 0;
+        }
+
+        .background span {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: animate 10s linear infinite;
+        }
+
+        .background span:nth-child(1) {
+            width: 100px;
+            height: 100px;
+            top: 20%;
+            left: 80%;
+            animation-duration: 15s;
+        }
+
+        .background span:nth-child(2) {
+            width: 150px;
+            height: 150px;
+            top: 60%;
+            left: 10%;
+            animation-duration: 12s;
+        }
+
+        .background span:nth-child(3) {
+            width: 80px;
+            height: 80px;
+            top: 10%;
+            left: 30%;
+            animation-duration: 18s;
+        }
+
+        .background span:nth-child(4) {
+            width: 120px;
+            height: 120px;
+            top: 70%;
+            left: 70%;
+            animation-duration: 14s;
+        }
+
+        .background span:nth-child(5) {
+            width: 90px;
+            height: 90px;
+            top: 40%;
+            left: 50%;
+            animation-duration: 16s;
+        }
+
+        @keyframes animate {
+            0% {
+                transform: scale(0) translateY(0) rotate(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1) translateY(-100px) rotate(180deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0) translateY(-200px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            width: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            z-index: 1;
+        }
+
+        .form {
+            padding: 40px;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-header h1 {
+            color: #333;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .form-header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            outline: none;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            border-color: #4ECDC4;
+            box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            color: #fff;
+            background: linear-gradient(45deg, #4ECDC4, #2BAE9F);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 174, 159, 0.3);
+        }
+
+        button i {
+            font-size: 18px;
+            transition: transform 0.3s ease;
+        }
+
+        button:hover i {
+            transform: translateX(5px);
+        }
+
+        .link {
+            text-align: center;
+            margin-top: 25px;
+            color: #666;
+        }
+
+        a {
+            color: #4ECDC4;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #2BAE9F;
+        }
+
+        .error {
+            background-color: #FF6B6B;
+            color: #fff;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;      
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(255, 107, 107, 0.2);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: 90%;
+                margin: 20px;
+            }
+            
+            .form {
+                padding: 30px;
+            }
+        }
+    </style>
+</body>
+</html>
