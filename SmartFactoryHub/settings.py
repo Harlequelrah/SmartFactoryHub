@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "channels",
+    "sensor"
 ]
 
 MIDDLEWARE = [
@@ -85,8 +86,12 @@ CHANNEL_LAYERS = {
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'smartfactoryhub',  # Remplace par le nom de ta base de données
+        'USER': 'root',  # Remplace par ton utilisateur MySQL
+        'PASSWORD': '',  # Remplace par ton mot de passe MySQL
+        'HOST': 'localhost',  # Si MySQL est sur la même machine
+        'PORT': '3306',  # Port par défaut pour MySQL
     }
 }
 
