@@ -24,7 +24,7 @@ TOPIC2 = "capteur1/pression"
 
 class MqttService:
     def __init__(self, client_id):
-        self.client = mqtt.Client(client_id, protocol=mqtt.MQTTv311)
+        self.client = mqtt.Client(client_id=client_id, protocol=mqtt.MQTTv311)
         self.client.tls_set()  # Activer TLS pour une connexion sécurisée
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
@@ -44,7 +44,7 @@ class MqttService:
             {"pression": pression, "timestamp": timestamp},
         ]
 
-        
+
         self.client.publish(TOPIC1, json.dumps(messages[0]))
         self.client.publish(TOPIC2, json.dumps(messages[1]))
         logger.info(f"Message publié : {messages}")
