@@ -4,7 +4,7 @@ import random
 import logging
 import paho.mqtt.client as mqtt
 from django.core.management.base import BaseCommand
-from django.utils.timezone import now
+from django.utils.timezone import now, timedelta
 from sensor.models import Machine
 from django.db import connections
 import threading
@@ -43,6 +43,8 @@ class MqttService:
             {"temperature": temperature, "timestamp": timestamp},
             {"pression": pression, "timestamp": timestamp},
         ]
+
+        
         self.client.publish(TOPIC1, json.dumps(messages[0]))
         self.client.publish(TOPIC2, json.dumps(messages[1]))
         logger.info(f"Message publié : {messages}")
@@ -84,18 +86,22 @@ class MqttService:
 
     def detect_anomaly_or_predict(self, temperature):
         """Effectue une prédiction avec le modèle ou détecte une anomalie"""
-        # Préparer l'entrée pour le modèle (on transforme le timestamp ou toute autre donnée pertinente)
-        timestamp_value = pd.to_datetime(now()).value  # Utilisation du timestamp actuel
-        input_data = np.array([[timestamp_value]]).reshape(-1, 1)
+        # Préparer l'entrée pour le modèle (timestamp dans 10 secondes)
+        future_timestamp = now() + timedelta(seconds=10)
+        future_timestamp_value = pd.to_datetime(future_timestamp).value
+        input_data = np.array([[future_timestamp_value]]).reshape(-1, 1)
 
-        # Faire une prédiction
+        # Faire une prédiction pour dans 10 secondes
         predicted_temperature = self.model.predict(input_data)[0]
-        logger.info(f"Température prédite pour le timestamp {now()}: {predicted_temperature:.2f}°C")
+        logger.info(f"Température prédite pour dans 10 secondes ({future_timestamp}): {predicted_temperature:.2f}°C")
 
-        # Anomalie détectée si la température réelle s'écarte trop de la prédiction
-        threshold = 7.0  # Exemple : seuil de 5°C d'écart
+        # Comparer avec la température actuelle (détection d'anomalies éventuelles)
+        threshold = 7.0  # Exemple : seuil de 7°C d'écart
         if abs(temperature - predicted_temperature) > threshold:
             logger.warning(f"Anomalie détectée : Température réelle ({temperature}°C) éloignée de la prédiction ({predicted_temperature:.2f}°C)")
+
+        # Retourner la prédiction pour la publication
+        return predicted_temperature
 
     def _check_database_connection(self):
         """Vérifie si la connexion à la base de données est prête"""
