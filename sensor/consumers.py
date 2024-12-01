@@ -18,19 +18,6 @@ def on_connect(client, userdata, flags, rc):
         print(f"Échec de la connexion au broker MQTT, code : {rc}")
 
 
-# Fonction de callback pour MQTT
-def on_message(client, userdata, msg):
-    message = msg.payload.decode("utf-8")
-    try:
-        sensor_data = json.loads(message)
-        print(f"Message reçu via MQTT: {sensor_data}")
-
-        # Envoi des données au groupe WebSocket (utilisation de async_to_sync pour appeler la méthode asynchrone)
-        async_to_sync(client.send_sensor_data_to_group)(sensor_data)
-
-    except json.JSONDecodeError:
-        print(f"Erreur de décodage du message JSON: {message}")
-
 
 # Classe Consumer pour gérer les WebSockets
 class SensorConsumer(AsyncWebsocketConsumer):
@@ -48,6 +35,8 @@ class SensorConsumer(AsyncWebsocketConsumer):
         self.mqtt_client.tls_set()  # Active TLS pour des connexions sécurisées
 
         # Passer l'instance du consumer à la fonction on_message
+        self.mqtt_client.on_connect = on_connect
+        # Passer l'instance du consumer à la fonction on_message
         self.mqtt_client.on_message = self.on_message
 
         # Connexion au broker MQTT
@@ -63,9 +52,13 @@ class SensorConsumer(AsyncWebsocketConsumer):
         try:
             sensor_data = json.loads(message)
             print(f"Message reçu via MQTT: {sensor_data}")
+            sensor_id = sensor_data.get("sensor_id")
+            if not sensor_id:
+                print(f"Aucun sensor_id trouvé dans le message : {sensor_data}")
+                return
 
             # Utilisation de async_to_sync pour appeler la méthode asynchrone du consumer
-            async_to_sync(self.send_sensor_data_to_group)(sensor_data)
+            async_to_sync(self.send_sensor_data_to_group)(sensor_id,sensor_data)
 
         except json.JSONDecodeError:
             print(f"Erreur de décodage du message JSON: {message}")
@@ -80,12 +73,13 @@ class SensorConsumer(AsyncWebsocketConsumer):
         sensor_data = data.get("sensor_data", {})
         print(f"Message reçu du client: {sensor_data}")
 
-    async def send_sensor_data_to_group(self, sensor_data):
+    async def send_sensor_data_to_group(self, sensor_id,sensor_data):
         await self.channel_layer.group_send(
             self.room_group_name,
-            {"type": "send_sensor_data", "sensor_data": sensor_data},
+            {"type": "send_sensor_data","sensor_id":sensor_id, "sensor_data": sensor_data},
         )
 
     async def send_sensor_data(self, event):
         sensor_data = event["sensor_data"]
-        await self.send(text_data=json.dumps({"sensor_data": sensor_data}))
+        sensor_id=event["sensor_id"]
+        await self.send(text_data=json.dumps({"sensor_id":sensor_id,"sensor_data": sensor_data}))

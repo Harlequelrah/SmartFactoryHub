@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capteurs Dynamiques</title>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/');
+            const tableBody = document.getElementById('sensor-table-body');
+            const tableHead = document.getElementById('sensor-table-head');
+            const sensorDataMap = {}; // Stocker les données par sensor_id
+            let attributes = []; // Liste des attributs pour l'en-tête
+
+            ws.onopen = function() {
+                console.log("Connexion WebSocket établie");
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                const sensorId = data.sensor_id;
+                const sensorData = data.sensor_data;
+
+                // Mettre à jour les données et les colonnes
+                if (sensorId) {
+                    console.log('sensor_id ' + sensorId + ' available');
+                    sensorDataMap[sensorId] = sensorData;
+
+                    // Mettre à jour les attributs si nécessaire
+                    const newAttributes = Object.keys(sensorData);
+                    if (attributes.length === 0 || !arraysEqual(attributes, newAttributes)) {
+                        attributes = newAttributes;
+                        updateTableHeader(attributes);
+                    }
+
+                    updateTable();
+                } else {
+                    console.log("no sensor_id available");
+                }
+            };
+
+            function updateTableHeader(attrs) {
+                tableHead.innerHTML = ''; // Réinitialiser l'en-tête
+                const headerRow = document.createElement('tr');
+
+
+                // Ajouter les colonnes pour chaque attribut
+                attrs.forEach(attr => {
+                    const th = document.createElement('th');
+                    th.textContent = attr;
+                    headerRow.appendChild(th);
+                });
+
+                tableHead.appendChild(headerRow);
+            }
+
+            function updateTable() {
+                tableBody.innerHTML = ''; // Réinitialiser le tableau
+                Object.keys(sensorDataMap).forEach(sensorId => {
+                    const row = document.createElement('tr');
+                    const idCell = document.createElement('td');
+
+                    idCell.textContent = sensorId;
+                    row.appendChild(idCell);
+
+                    // Ajouter les colonnes pour chaque attribut
+                    attributes.forEach(attr => {
+                        const dataCell = document.createElement('td');
+                        dataCell.textContent = sensorDataMap[sensorId][attr] || 'N/A';
+                        row.appendChild(dataCell);
+                    });
+
+                    tableBody.appendChild(row);
+                });
+            }
+
+            function arraysEqual(a, b) {
+                return JSON.stringify(a) === JSON.stringify(b);
+            }
+
+            ws.onclose = function(e) {
+                console.error('Connexion fermée !', e);
+            };
+
+            ws.onerror = function(error) {
+                console.error('Erreur WebSocket:', error);
+            };
+        });
+    </script>
+</head>
+<body>
+    <h1>Données des Capteurs</h1>
+    <table border="1">
+        <thead id="sensor-table-head"></thead>
+        <tbody id="sensor-table-body"></tbody>
+    </table>
+</body>
+</html>
