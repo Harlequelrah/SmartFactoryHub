@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "channels",
-    "sensor"
+    "sensor",
+    "auth_app"
 ]
 
 MIDDLEWARE = [
@@ -92,10 +93,14 @@ DATABASES = {
         'PASSWORD': '',  # Remplace par ton mot de passe MySQL
         'HOST': 'localhost',  # Si MySQL est sur la même machine
         'PORT': '3306',  # Port par défaut pour MySQL
+    },
+    'sqlite':{
+        'ENGINE' : 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
-
+LOGIN_URL = "connexion"
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -118,7 +123,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'fr-fr'
 
 TIME_ZONE = 'UTC'
 
