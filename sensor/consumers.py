@@ -9,6 +9,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import async_to_sync
 import logging
 from .log_consumers import WebSocketHandler
+
 # from sensor.models import Sensor
 # from sensor.models import Machine
 # Configuration du client MQTT
@@ -26,6 +27,7 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
 
 # Fonction de callback pour la connexion MQTT
 def on_connect(client, userdata, flags, rc):
@@ -48,7 +50,9 @@ class SensorConsumer(AsyncWebsocketConsumer):
 
         # Démarrer l'abonnement aux données MQTT
         self.mqtt_client = mqtt.Client(client_id="DataReceiver")
-        self.mqtt_client.username_pw_set(username="smartfactoryhub", password="smfahu0156")
+        self.mqtt_client.username_pw_set(
+            username="smartfactoryhub", password="smfahu0156"
+        )
         self.mqtt_client.tls_set()  # Active TLS pour des connexions sécurisées
 
         # Passer l'instance du consumer à la fonction on_message
@@ -74,39 +78,65 @@ class SensorConsumer(AsyncWebsocketConsumer):
             if not sensor_id:
                 logger.info(f"Aucun sensor_id trouvé dans le message : {sensor_data}")
                 return
-            self.detect_anomaly_or_predict(sensor_data.get("temperature"))
+            self.detect_anomaly_or_predict(sensor_data.get("temperature"),sensor_data.get('pressure'),sensor_data.get('luminosity'),sensor_data.get('energy'),sensor_data.get('humidity'))
 
             # Utilisation de async_to_sync pour appeler la méthode asynchrone du consumer
-            async_to_sync(self.send_sensor_data_to_group)(sensor_id,sensor_data)
+            async_to_sync(self.send_sensor_data_to_group)(sensor_id, sensor_data)
 
         except json.JSONDecodeError:
             logger.error(f"Erreur de décodage du message JSON: {message}")
-    def detect_anomaly_or_predict(self, temperature):
+
+    def detect_anomaly_or_predict(self, temperature, pressure, luminosity, energy, humidity):
         """Effectue une prédiction avec le modèle ou détecte une anomalie"""
+        from datetime import datetime, timedelta
+
         # Préparer l'entrée pour le modèle (timestamp dans 10 secondes)
-        future_timestamp = now() + timedelta(seconds=10)
-        # future_timestamp_value = pd.to_datetime(future_timestamp).value
-        df = pd.DataFrame(future_timestamp)
-        df["year"] = df["timestamp"].dt.year
-        df["month"] = df["timestamp"].dt.month
-        df["day"] = df["timestamp"].dt.day
-        df["hour"] = df["timestamp"].dt.hour
-        df["minute"] = df["timestamp"].dt.minute
+        future_timestamp = datetime.now() + timedelta(seconds=10)
+
+        # Construire le DataFrame d'entrée avec les futures
+        df = pd.DataFrame(
+            [
+                {
+                    "timestamp": future_timestamp,
+                    "year": future_timestamp.year,
+                    "month": future_timestamp.month,
+                    "day": future_timestamp.day,
+                    "hour": future_timestamp.hour,
+                    "minute": future_timestamp.minute,
+                    "pressure": pressure,
+                    "luminosity": luminosity,
+                    "energy": energy,
+                    "humidity": humidity,
+                }
+            ]
+        )
+
+        # Définir les colonnes utilisées pour la prédiction
         X = df[
             [
                 "year",
-                "month",
+            "month",
                 "day",
-                "hour",
+            "hour",
                 "minute",
+                "pressure",
+                "luminosity",
+                "energy",
+                "humidity",
             ]
         ]
-        input_data = np.array(X).reshape(-1, 1)
 
         # Faire une prédiction pour dans 10 secondes
-        predicted_temperature = self.model.predict(input_data)[0]
-        logger.info(f"Température actuelle {temperature} et température  prédite pour dans 10 secondes ({future_timestamp}): {predicted_temperature:.2f}°C")
+        predicted_temperature = self.model.predict(X)[0]
+
+        # Logger la prédiction
+        logger.info(
+            f"Température prédite pour dans 10 secondes ({future_timestamp}):     {predicted_temperature:.2f}°C"
+        )
+
+        # Vérifier si la température prédite est anormale
         self.check_temperature(predicted_temperature)
+
         return predicted_temperature
 
     def check_temperature(self, temperature):
@@ -115,7 +145,53 @@ class SensorConsumer(AsyncWebsocketConsumer):
         elif temperature > 60:
             log = " un risque d'équipement en surchauffe ou d'incendie"
             logger.warning(
-                f"Anomalie détectée : La Température prédite dans 10s sera ({temperature}°C) qui peut indiquer {log}.)"
+                    f"Anomalie détectée : La Température prédite dans 10s sera ({temperature}°C) qui peut indiquer {log}.)"
+                )
+
+    def check_pressure(self, pression):
+        if (
+            pression < 0.5
+        ):  # Valeur indicative, en dessous de la pression minimale attendue
+            logger.warning(
+                "Attention : Pression trop faible, pourrait indiquer une fuite ou un dysfonctionnement."
+            )
+        elif (
+            pression > 15
+        ):  # Valeur indicative, au-dessus de la pression maximale attendue
+            logger.warning(
+                "Attention : Pression trop élevée, risque d'endommagement des équipements ou d'explosion."
+            )
+
+    def check_luminosity(self, luminosity):
+        if luminosity < 100:  # Valeur indicative pour des environnements d'ateliers
+            logger.warning(
+                "Attention : Luminosité trop faible, risque de sécurité ou  d'erreur de travail."
+            )
+        elif (
+            luminosity > 3000
+        ):  # Valeur indicative pour des environnements où une trop forte     luminosité peut causer des problèmes
+            logger.warning(
+                "Attention : Luminosité trop élevée, risque d'éblouissement oude gaspillage d'énergie."
+            )
+
+    def check_energy(self, energy):
+        if energy < 10:  # Valeur indicative, dépend de l'application
+            logger.warning(
+                "Attention : Consommation d'énergie trop faible, pourrait indiquer une panne ou un arrêt non planifié."
+            )
+        elif energy > 150:  # Valeur indicative, à ajuster selon les besoins
+            logger.warning(
+                "Attention : Consommation d'énergie trop élevée, pourrait indiquer une surcharge ou un dysfonctionnement."
+            )
+
+    def check_humidity(self, humidity):
+        if humidity < 0.20:
+            logger.warning(
+                "Attention : Humidité trop faible, risque d'électricité statique."
+            )
+        elif humidity > 0.80:
+            logger.warning(
+                "Attention : Humidité trop élevée, risque de corrosion ou moisissures."
             )
 
     async def disconnect(self, close_code):
@@ -128,16 +204,22 @@ class SensorConsumer(AsyncWebsocketConsumer):
         sensor_data = data.get("sensor_data", {})
         logger.info(f"Message reçu du client: {sensor_data}")
 
-    async def send_sensor_data_to_group(self, sensor_id,sensor_data):
+    async def send_sensor_data_to_group(self, sensor_id, sensor_data):
         await self.channel_layer.group_send(
             self.room_group_name,
-            {"type": "send_sensor_data","sensor_id":sensor_id, "sensor_data": sensor_data},
+            {
+                "type": "send_sensor_data",
+                "sensor_id": sensor_id,
+                "sensor_data": sensor_data,
+            },
         )
 
     async def send_sensor_data(self, event):
         sensor_data = event["sensor_data"]
-        sensor_id=event["sensor_id"]
-        await self.send(text_data=json.dumps({"sensor_id":sensor_id,"sensor_data": sensor_data}))
+        sensor_id = event["sensor_id"]
+        await self.send(
+            text_data=json.dumps({"sensor_id": sensor_id, "sensor_data": sensor_data})
+        )
 
 
 class LogConsumer(AsyncWebsocketConsumer):

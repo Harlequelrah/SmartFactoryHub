@@ -5,6 +5,7 @@ from django.core.management import call_command
 class SensorConfig(AppConfig):
     name = 'sensor'
 
-    # def ready(self):
-    #     print("ready")
-    #     call_command('train_model_sensor')
+    def ready(self):
+        print("ready")
+        # call_command('mqtt_command')
+        # call_command("train_model_sensor")

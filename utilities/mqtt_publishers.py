@@ -1,5 +1,6 @@
 import paho.mqtt.client as mqtt
 import random
+from datetime import datetime, timedelta
 import time
 import json
 
@@ -23,16 +24,23 @@ client.loop_start()
 
 print("Connexion réussie au broker HiveMQ !")
 def create_sensor(sensor_id):
+    temperature = round(random.uniform(0.0, 100.0), 2)
+    humidity = round(
+        random.uniform(0.0, 1.0 - (temperature - 10) / 100), 2
+    )  # Humidité diminue avec la température
+    current_time = datetime.now() + timedelta(seconds=random.randint(0, 10))
     sensor_data = {
         "sensor_id": sensor_id,
-        "temperature": round(random.uniform(10.0, 60.0), 2),
-        "humidity": round(random.uniform(10.0, 30.0), 2),
-        "energy": round(random.uniform(20.0, 30.0), 2),
-        "luminosity": round(random.uniform(20.0, 30.0), 2),
-        "pressure": random.randint(40, 80),
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "temperature": temperature,
+        "humidity": humidity,
+        "energy": round(random.uniform(0.0, 200.0), 2),
+        "luminosity": round(random.uniform(0.0, 3500.0), 2),
+        "pressure": round(random.uniform(0.0, 30.0), 2),
+        "timestamp": current_time.strftime("%Y-%m-%d %H:%M:%S"),
     }
     return sensor_data
+
+
 while True:
         message = create_sensor(1)
         client.publish(TOPIC + str(1), json.dumps(message))
