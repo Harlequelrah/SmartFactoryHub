@@ -25,7 +25,7 @@ print("Connexion réussie au broker HiveMQ !")
 def create_sensor(sensor_id):
     sensor_data = {
         "sensor_id": sensor_id,
-        "temperature": round(random.uniform(20.0, 30.0), 2),
+        "temperature": round(random.uniform(10.0, 60.0), 2),
         "humidity": round(random.uniform(10.0, 30.0), 2),
         "energy": round(random.uniform(20.0, 30.0), 2),
         "luminosity": round(random.uniform(20.0, 30.0), 2),
@@ -33,12 +33,16 @@ def create_sensor(sensor_id):
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
     return sensor_data
-
-
 while True:
-    for i in range(1,5):
-        message=create_sensor(i)
-        client.publish(TOPIC+str(i), json.dumps(message))
+        message = create_sensor(1)
+        client.publish(TOPIC + str(1), json.dumps(message))
         print(f"Message publié : {message}")
+        time.sleep(3)  # Attendre 5 secondes avant d'envoyer un autre message
 
-    time.sleep(5)  # Attendre 5 secondes avant d'envoyer un autre message
+# while True:
+#     for i in range(1,5):
+#         message=create_sensor(i)
+#         client.publish(TOPIC+str(i), json.dumps(message))
+#         print(f"Message publié : {message}")
+
+#     time.sleep(5)  # Attendre 5 secondes avant d'envoyer un autre message

@@ -20,51 +20,52 @@
     logSocket.onclose = function(event) {
         console.error("WebSocket fermé : ", event);
     };
-</script>
-
-
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/');
+            const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/');  // Connexion WebSocket pour les données des capteurs
             const tableBody = document.getElementById('sensor-table-body');
             const tableHead = document.getElementById('sensor-table-head');
             const sensorDataMap = {}; // Stocker les données par sensor_id
-            let attributes = []; // Liste des attributs pour l'en-tête
+            let attributes = ['temperature', 'pressure', 'energy', 'luminosity', 'humidity']; // Liste des attributs sans 'sensor_id'
 
+            // Connexion réussie au WebSocket
             ws.onopen = function() {
                 console.log("Connexion WebSocket établie");
             };
 
+            // Réception de données des capteurs
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                const sensorId = data.sensor_id;
-                const sensorData = data.sensor_data;
+                const sensorData = data.sensor_data;  // Les données du capteur, sans le sensor_id
+                console.log(sensorData);
 
                 // Mettre à jour les données et les colonnes
-                if (sensorId) {
-                    console.log('sensor_id ' + sensorId + ' available');
+                if (sensorData) {
+                    console.log('Données reçues pour un capteur');
+                    const sensorId = data.sensor_id;  // Récupérer le sensor_id pour savoir quel capteur a envoyé les données
                     sensorDataMap[sensorId] = sensorData;
 
                     // Mettre à jour les attributs si nécessaire
                     const newAttributes = Object.keys(sensorData);
                     if (attributes.length === 0 || !arraysEqual(attributes, newAttributes)) {
                         attributes = newAttributes;
-                        updateTableHeader(attributes);
+                        updateTableHeader(attributes);  // Mettre à jour l'en-tête
                     }
 
-                    updateTable();
+                    updateTable();  // Mettre à jour le corps du tableau avec les nouvelles données
                 } else {
-                    console.log("no sensor_id available");
+                    console.log("Données de capteur invalides");
                 }
             };
 
+            // Mettre à jour l'en-tête du tableau avec les attributs
             function updateTableHeader(attrs) {
                 tableHead.innerHTML = ''; // Réinitialiser l'en-tête
                 const headerRow = document.createElement('tr');
 
-
-                // Ajouter les colonnes pour chaque attribut
+                // Ajouter les colonnes pour chaque attribut, sauf sensor_id
                 attrs.forEach(attr => {
                     const th = document.createElement('th');
                     th.textContent = attr;
@@ -74,19 +75,16 @@
                 tableHead.appendChild(headerRow);
             }
 
+            // Mettre à jour les lignes du tableau avec les données des capteurs
             function updateTable() {
-                tableBody.innerHTML = ''; // Réinitialiser le tableau
+                tableBody.innerHTML = ''; // Réinitialiser le corps du tableau
                 Object.keys(sensorDataMap).forEach(sensorId => {
                     const row = document.createElement('tr');
-                    const idCell = document.createElement('td');
 
-                    idCell.textContent = sensorId;
-                    row.appendChild(idCell);
-
-                    // Ajouter les colonnes pour chaque attribut
+                    // Ajouter les colonnes pour chaque attribut, sans sensor_id
                     attributes.forEach(attr => {
                         const dataCell = document.createElement('td');
-                        dataCell.textContent = sensorDataMap[sensorId][attr] || 'N/A';
+                        dataCell.textContent = sensorDataMap[sensorId][attr] || 'N/A';  // Si aucune donnée, afficher 'N/A'
                         row.appendChild(dataCell);
                     });
 
@@ -94,6 +92,7 @@
                 });
             }
 
+            // Comparer deux tableaux pour vérifier qu'ils sont identiques
             function arraysEqual(a, b) {
                 return JSON.stringify(a) === JSON.stringify(b);
             }

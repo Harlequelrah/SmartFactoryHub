@@ -8,6 +8,9 @@ class Sensor(models.Model):
     luminosity = models.FloatField()
     energy = models.FloatField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f"{self.temperature}°C at {self.timestamp}"
+
 
 class Machine(models.Model):
     temperature = models.FloatField()

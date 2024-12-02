@@ -1,9 +1,16 @@
 import json
+from django.db import connections
 import paho.mqtt.client as mqtt
+from django.utils.timezone import now, timedelta
+import numpy as np
+import joblib
+import pandas as pd
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import async_to_sync
 import logging
 from .log_consumers import WebSocketHandler
+# from sensor.models import Sensor
+# from sensor.models import Machine
 # Configuration du client MQTT
 BROKER = "broker.hivemq.com"
 PORT = 8883
@@ -23,10 +30,10 @@ logger = logging.getLogger(__name__)
 # Fonction de callback pour la connexion MQTT
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        logging.info("Connecté au broker MQTT avec succès")
+        logger.info("Connecté au broker MQTT avec succès")
         client.subscribe(TOPIC)  # Abonne-toi au topic
     else:
-        logging.info(f"Échec de la connexion au broker MQTT, code : {rc}")
+        logger.info(f"Échec de la connexion au broker MQTT, code : {rc}")
 
 
 # Classe Consumer pour gérer les WebSockets
@@ -51,6 +58,7 @@ class SensorConsumer(AsyncWebsocketConsumer):
 
         # Connexion au broker MQTT
         self.mqtt_client.connect(BROKER, PORT)
+        self.model = joblib.load("temperature_model.pkl")
         self.mqtt_client.subscribe(TOPIC)
 
         # Démarrer l'écoute MQTT
@@ -61,17 +69,51 @@ class SensorConsumer(AsyncWebsocketConsumer):
         message = msg.payload.decode("utf-8")
         try:
             sensor_data = json.loads(message)
-            logging.info(f"Message reçu via MQTT: {sensor_data}")
+            # logger.info(f"Message reçu via MQTT: {sensor_data}")
             sensor_id = sensor_data.get("sensor_id")
             if not sensor_id:
-                logging.info(f"Aucun sensor_id trouvé dans le message : {sensor_data}")
+                logger.info(f"Aucun sensor_id trouvé dans le message : {sensor_data}")
                 return
+                # Enregistrer la température dans la base de données
+            # Machine.objects.create(temperature=sensor_data.get("temperature"),timestapm=now())
+            # Sensor.objects.create(
+            #             temperature=sensor_data.get("temperature"),
+            #             humidity=sensor_data.get("humidity"),
+            #             pressure=sensor_data.get("pressure"),
+            #             energy=sensor_data.get("energy"),
+            #             luminosity=sensor_data.get("luminosity")
+            #                     )
+            # logger.info(
+            #             f"capteur enregistré dans la base de données : {message}"
+            #         )
+            self.detect_anomaly_or_predict(sensor_data.get("temperature"))
 
             # Utilisation de async_to_sync pour appeler la méthode asynchrone du consumer
             async_to_sync(self.send_sensor_data_to_group)(sensor_id,sensor_data)
 
         except json.JSONDecodeError:
-            logging.error(f"Erreur de décodage du message JSON: {message}")
+            logger.error(f"Erreur de décodage du message JSON: {message}")
+    def detect_anomaly_or_predict(self, temperature):
+        """Effectue une prédiction avec le modèle ou détecte une anomalie"""
+        # Préparer l'entrée pour le modèle (timestamp dans 10 secondes)
+        future_timestamp = now() + timedelta(seconds=10)
+        future_timestamp_value = pd.to_datetime(future_timestamp).value
+        input_data = np.array([[future_timestamp_value]]).reshape(-1, 1)
+
+        # Faire une prédiction pour dans 10 secondes
+        predicted_temperature = self.model.predict(input_data)[0]
+        logger.info(f"Température prédite pour dans 10 secondes ({future_timestamp}): {predicted_temperature:.2f}°C")
+        self.check_temperature(predicted_temperature)
+        return predicted_temperature
+
+    def check_temperature(self, temperature):
+        if temperature < 10:
+            log = "une panne de chauffage ou un environnement inadéquat"
+        elif temperature > 60:
+            log = " un risque d'équipement en surchauffe ou d'incendie"
+            logger.warning(
+                f"Anomalie détectée : La Température prédite dans 10s sera ({temperature}°C) qui peut indiquer {log}.)"
+            )
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
@@ -81,7 +123,7 @@ class SensorConsumer(AsyncWebsocketConsumer):
         # Cette méthode peut être utilisée pour recevoir des messages du client WebSocket
         data = json.loads(text_data)
         sensor_data = data.get("sensor_data", {})
-        logging.info(f"Message reçu du client: {sensor_data}")
+        logger.info(f"Message reçu du client: {sensor_data}")
 
     async def send_sensor_data_to_group(self, sensor_id,sensor_data):
         await self.channel_layer.group_send(
