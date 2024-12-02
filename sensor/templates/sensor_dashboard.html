@@ -1,0 +1,48 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Dashboard</h1>
+
+        <!-- Canvas pour afficher le graphique -->
+        <canvas id="myChart" width="400" height="200"></canvas>
+
+        <!-- Intégrer Chart.js -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            // Configuration du graphique
+            var ctx = document.getElementById('myChart').getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'bar', // Type de graphique (barres)
+                data: {
+                    labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'], // Labels sur l'axe des x
+                    datasets: [{
+                        label: 'Sales',
+                        data: [12, 19, 3, 5, 2, 3, 7], // Données des barres
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        </script>
+    </div>
+</body>
+
+</html>
