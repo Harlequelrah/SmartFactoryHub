@@ -58,7 +58,7 @@ class SensorConsumer(AsyncWebsocketConsumer):
 
         # Connexion au broker MQTT
         self.mqtt_client.connect(BROKER, PORT)
-        self.model = joblib.load("temperature_model.pkl")
+        self.model = joblib.load("sensor_temperature_model.pkl")
         self.mqtt_client.subscribe(TOPIC)
 
         # Démarrer l'écoute MQTT
@@ -74,18 +74,6 @@ class SensorConsumer(AsyncWebsocketConsumer):
             if not sensor_id:
                 logger.info(f"Aucun sensor_id trouvé dans le message : {sensor_data}")
                 return
-                # Enregistrer la température dans la base de données
-            # Machine.objects.create(temperature=sensor_data.get("temperature"),timestapm=now())
-            # Sensor.objects.create(
-            #             temperature=sensor_data.get("temperature"),
-            #             humidity=sensor_data.get("humidity"),
-            #             pressure=sensor_data.get("pressure"),
-            #             energy=sensor_data.get("energy"),
-            #             luminosity=sensor_data.get("luminosity")
-            #                     )
-            # logger.info(
-            #             f"capteur enregistré dans la base de données : {message}"
-            #         )
             self.detect_anomaly_or_predict(sensor_data.get("temperature"))
 
             # Utilisation de async_to_sync pour appeler la méthode asynchrone du consumer
@@ -97,8 +85,23 @@ class SensorConsumer(AsyncWebsocketConsumer):
         """Effectue une prédiction avec le modèle ou détecte une anomalie"""
         # Préparer l'entrée pour le modèle (timestamp dans 10 secondes)
         future_timestamp = now() + timedelta(seconds=10)
-        future_timestamp_value = pd.to_datetime(future_timestamp).value
-        input_data = np.array([[future_timestamp_value]]).reshape(-1, 1)
+        # future_timestamp_value = pd.to_datetime(future_timestamp).value
+        df = pd.DataFrame(future_timestamp)
+        df["year"] = df["timestamp"].dt.year
+        df["month"] = df["timestamp"].dt.month
+        df["day"] = df["timestamp"].dt.day
+        df["hour"] = df["timestamp"].dt.hour
+        df["minute"] = df["timestamp"].dt.minute
+        X = df[
+            [
+                "year",
+                "month",
+                "day",
+                "hour",
+                "minute",
+            ]
+        ]
+        input_data = np.array(X).reshape(-1, 1)
 
         # Faire une prédiction pour dans 10 secondes
         predicted_temperature = self.model.predict(input_data)[0]
