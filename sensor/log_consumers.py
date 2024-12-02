@@ -6,14 +6,15 @@ import json
 
 class WebSocketHandler(logging.Handler):
     def emit(self, record):
-        log_entry = self.format(record)
-        channel_layer = get_channel_layer()
-
-        # Envoie le log au groupe WebSocket
-        async_to_sync(channel_layer.group_send)(
-            "log_group",  # Le groupe WebSocket utilisé pour les logs
-            {
-                "type": "send_log",  # Type d'événement WebSocket
-                "message": log_entry,
-            },
-        )
+        try:
+            log_entry = self.format(record)
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                "log_group",
+                {
+                    "type": "send_log",
+                    "message": log_entry,
+                },
+            )
+        except Exception as e:
+            print(f"Erreur lors de l'envoi WebSocket : {e}")

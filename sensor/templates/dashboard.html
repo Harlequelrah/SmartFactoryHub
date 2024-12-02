@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -5,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tableau de Bord avec Chart.js</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="dashboard.css"> 
+    <link rel="stylesheet" href="{% static 'dashboard.css' %}">
 </head>
 <body>
     <div class="dashboard">
@@ -34,6 +35,6 @@
         <!-- Notifications ici -->
     </div>
 
-    <script src="dashboard.js"></script> 
+    <script src="dashboard.js"></script>
 </body>
 </html>

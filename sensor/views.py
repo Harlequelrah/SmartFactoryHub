@@ -11,3 +11,5 @@ def sensor_log_view(request):
 
 def sensors_data_view(request):
     return render(request, "sensors_data.html")
+def sensors_dashboard_view(request):
+    return render(request, "sensor_dashboard.html")
