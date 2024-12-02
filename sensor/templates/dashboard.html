@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord avec Chart.js</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="dashboard.css"> 
+</head>
+<body>
+    <div class="dashboard">
+        <h1>Tableau de Bord</h1>
+
+        <!-- Graphique en Barres  -->
+        <div class="chart-container">
+            <h2>Premières analyses faites </h2>
+            <canvas id="myChart1" width="400" height="200"></canvas>
+        </div>
+
+        <!-- Graphique en Barres  -->
+        <div class="chart-container">
+            <h2>Deuxième  analyses faites </h2>
+            <canvas id="myChart2" width="400" height="200"></canvas>
+        </div>
+
+        <!-- Graphique en Diagramme -->
+        <div class="chart-container">
+            <h2>troisième  analyses faites</h2>
+            <canvas id="myChart3" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <div id="notifications" class="notifications">
+        <!-- Notifications ici -->
+    </div>
+
+    <script src="dashboard.js"></script> 
+</body>
+</html>
