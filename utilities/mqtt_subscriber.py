@@ -9,7 +9,7 @@ logger = logging.getLogger()
 # Configuration du broker HiveMQ
 BROKER = "broker.hivemq.com"
 PORT = 8883
-TOPIC = "sensor/sensor1"
+TOPIC = "SmartFactoryHub_sensor/#"
 
 
 # Fonction callback pour gérer la connexion
@@ -32,7 +32,7 @@ def on_message(client, userdata, msg):
 
 
 # Créer un client MQTT
-client = mqtt.Client(client_id="DataReceiver")
+client = mqtt.Client(client_id="DataReceiver",protocol=mqtt.MQTTv311)
 client.username_pw_set(username="smartfactoryhub", password="smfahu0156")
 client.tls_set()  # Active TLS pour des connexions sécurisées
 

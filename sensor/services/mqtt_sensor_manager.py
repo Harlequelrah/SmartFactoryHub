@@ -11,11 +11,10 @@ import time
 import json
 import numpy as np
 import pandas as pd
-
+from sensor.models import Sensor
 # Configuration du logger
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
 
 
 # Configuration du broker HiveMQ
@@ -27,73 +26,51 @@ TOPIC = "SmartFactoryHub_sensor/#"
 class MqttService:
     def __init__(self, client_id):
         self.client = mqtt.Client(client_id=client_id, protocol=mqtt.MQTTv311)
+        self.client.username_pw_set(username="smartfactoryhub", password="smfahu0156")
         self.client.tls_set()  # Activer TLS pour une connexion sécurisée
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
-
-        # Charger le modèle une fois lors de l'initialisation du service
-        self.model = joblib.load("sensor_model.pkl")
-        logger.info("Modèle chargé avec succès.")
+        self.client.enable_logger(logger)
 
     def connect(self):
         """Connecte le client MQTT au broker"""
         self.client.connect(BROKER, PORT)
 
-    def create_sensor(sensor_id):
-        temperature = round(random.uniform(20.0, 30.0), 2)
-        humidity = round(random.uniform(10.0, 30.0), 2)
-        energy = round(random.uniform(20.0, 30.0), 2)
-        luminosity = round(
-            random.uniform(20.0, 30.0), 2
-        )  # Température entre 20 et 30°C
-        pression = random.randint(40, 80)  # Humidité entre 40 et 80%
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-        return [
-            {
-                "humidity": humidity,
-                "sensor_id": sensor_id,
-                "luminosity": luminosity,
-                "energy": energy,
-                "temperature": temperature,
-                "timestamp": timestamp,
-            },
-            {"presure": pression, "timestamp": timestamp},
-        ][0]
-
     def on_connect(self, client, userdata, flags, rc):
         """Callback appelé lors de la connexion"""
         if rc == 0:
             logger.info("Connexion réussie au broker !")
-            self.client.subscribe(TOPIC1)  # S'abonner au topic de température
-            self.client.subscribe(TOPIC2)  # S'abonner au topic de pression
+            self.client.subscribe(TOPIC)  # S'abonner au topic de température# S'abonner au topic de pression
         else:
             logger.error(f"Échec de la connexion, code de retour : {rc}")
 
     def on_message(self, client, userdata, msg):
-        """Callback appelé lors de la réception de messages"""
+        # Cette méthode est maintenant appelée sur l'instance du consumer
+        message = msg.payload.decode("utf-8")
         try:
-            message = json.loads(msg.payload.decode("utf-8"))
-            logger.info(f"Message reçu : {message}")
-            temperature = message.get("temperature")
-            if temperature is not None:
-                # Vérifie que la base de données est prête avant d'interagir avec elle
-                if self._check_database_connection():
-                    # Enregistrer la température dans la base de données
-                    Machine.objects.create(temperature=temperature, timestamp=now())
-                    logger.info(
-                        f"Message enregistré dans la base de données : {message}"
-                    )
-
-                    # Prédire la température ou détecter une anomalie
-                    self.detect_anomaly_or_predict(temperature)
-
-                else:
-                    logger.error("Connexion à la base de données échouée.")
-            else:
-                logger.error("Message reçu sans 'temperature'.")
-        except json.JSONDecodeError as e:
-            logger.error(f"Erreur de décodage JSON : {e}")
-
+            sensor_data = json.loads(message)
+            logger.info(f"Message reçu via MQTT: {sensor_data}")
+            sensor_id = sensor_data.get("sensor_id")
+            if not sensor_id:
+                logger.info(f"Aucun sensor_id trouvé dans le message : {sensor_data}")
+                return
+            required_fields = ["temperature", "humidity", "pressure", "energy", "luminosity"]
+            if not all(field in sensor_data for field in required_fields):
+                logger.error(f"Données manquantes dans le message : {sensor_data}")
+                return
+            try:
+                Sensor.objects.create(
+                    temperature=sensor_data.get("temperature"),
+                    humidity=sensor_data.get("humidity"),
+                    pressure=sensor_data.get("pressure"),
+                    energy=sensor_data.get("energy"),
+                    luminosity=sensor_data.get("luminosity")
+                )
+                logger.info("Capteur enregistré dans la base de données.")
+            except Exception as e:
+                logger.error(f"Erreur lors de l'enregistrement du capteur : {e}")
+        except json.JSONDecodeError:
+            logger.error(f"Erreur de décodage du message JSON: {message}")
 
     def _check_database_connection(self):
         """Vérifie si la connexion à la base de données est prête"""
@@ -108,7 +85,6 @@ class MqttService:
     def loop(self):
         """Démarre la boucle d'écoute pour recevoir des messages"""
         self.client.loop_forever()
-
 
 
 class Command(BaseCommand):
@@ -127,5 +103,3 @@ class Command(BaseCommand):
             True  # Assurer que le thread se termine lorsque l'application se ferme
         )
         subscriber_thread.start()
-
-

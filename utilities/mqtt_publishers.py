@@ -29,7 +29,7 @@ def create_sensor(sensor_id):
         "humidity": round(random.uniform(10.0, 30.0), 2),
         "energy": round(random.uniform(20.0, 30.0), 2),
         "luminosity": round(random.uniform(20.0, 30.0), 2),
-        "pression": random.randint(40, 80),
+        "pressure": random.randint(40, 80),
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
     return sensor_data

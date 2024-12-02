@@ -33,9 +33,6 @@ class Command(BaseCommand):
                 "day",
                 "hour",
                 "minute",
-                "temperature",
-                "pressure",
-                "luminosity",
             ]
         ]
 

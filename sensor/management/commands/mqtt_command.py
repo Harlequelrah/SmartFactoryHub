@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from sensor.services.mqtt_manager import MqttService 
+from sensor.services.mqtt_sensor_manager import MqttService
 import threading
 
 class Command(BaseCommand):
@@ -7,7 +7,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         # Créer le service MQTT
-        mqtt_service = MqttService(client_id="DataGenerator")
+        mqtt_service = MqttService(client_id="DataBaseGenerator")
 
         # Connecter le client MQTT
         mqtt_service.connect()
@@ -16,6 +16,3 @@ class Command(BaseCommand):
         subscriber_thread = threading.Thread(target=mqtt_service.loop)
         subscriber_thread.daemon = True  # Assurer que le thread se termine lorsque l'application se ferme
         subscriber_thread.start()
-
-        # Démarrer le publisher (génération et envoi des données)
-        mqtt_service.start_publisher()

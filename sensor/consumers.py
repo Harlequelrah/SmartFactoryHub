@@ -102,7 +102,7 @@ class SensorConsumer(AsyncWebsocketConsumer):
 
         # Faire une prédiction pour dans 10 secondes
         predicted_temperature = self.model.predict(input_data)[0]
-        logger.info(f"Température prédite pour dans 10 secondes ({future_timestamp}): {predicted_temperature:.2f}°C")
+        logger.info(f"Température actuelle {temperature} et température  prédite pour dans 10 secondes ({future_timestamp}): {predicted_temperature:.2f}°C")
         self.check_temperature(predicted_temperature)
         return predicted_temperature
 
