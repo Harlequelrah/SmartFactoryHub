@@ -1,22 +1,62 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Capteurs Dynamiques</title>
+    <style>
+#log-message-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    display: none;
+}
 
+.log-message {
+    padding: 1em 2em;
+    border-radius: 8px;
+    font-size: 16px;
+    text-align: center;
+    background-color: #f8d7da; /* Couleur de fond d'erreur */
+    color: #721c24; /* Couleur du texte */
+    border: 1px solid #f5c6cb; /* Bordure d'erreur */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    animation: fade-in-out 3s forwards;
+}
+
+@keyframes fade-in-out {
+    0% {
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/');  // Connexion WebSocket pour les données des capteurs
-            const sensorDataMap = {}; // Stocker les données par sensor_id
-            let attributes = ['temperature', 'pressure', 'energy', 'luminosity', 'humidity']; // Liste des attributs sans 'sensor_id'
+            const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/');
+            const sensorDataMap = {};
+            let attributes = ['temperature', 'pressure', 'energy', 'luminosity', 'humidity'];
 
             const chartData = {
-                labels: [], // Les capteurs (pour les labels sur l'axe des x)
+                labels: [],
                 datasets: [{
                     label: 'Temperature',
-                    data: [], // Données des barres
+                    data: [],
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 1
@@ -36,68 +76,74 @@
                 }
             });
 
-            // Connexion réussie au WebSocket
-            ws.onopen = function() {
+            ws.onopen = function () {
                 console.log("Connexion WebSocket établie");
             };
 
-            // Réception de données des capteurs
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                const sensorData = data.sensor_data;  // Les données du capteur, sans le sensor_id
-                console.log(sensorData);
+                const group = data.group;
 
-                // Mettre à jour les données du capteur dans la map
-                if (sensorData) {
-                    const sensorId = data.sensor_id;  // Récupérer le sensor_id
-                    sensorDataMap[sensorId] = sensorData; // Met à jour les données du capteur dans le dictionnaire
-                    updateChartData();
+                if (group === 'sensor_data') {
+                    const sensorData = data.sensor_data;
+
+                    if (sensorData) {
+                        const sensorId = data.sensor_id;
+                        sensorDataMap[sensorId] = sensorData;
+                        updateChartData();
+                    }
+                } else if (group === "log_message") {
+                    showLogMessage(data.message);
                 }
             };
 
-            // Fonction pour mettre à jour le graphique avec les températures des capteurs
+            function showLogMessage(message) {
+                const container = document.getElementById('log-message-container');
+                const logDiv = document.createElement('div');
+                logDiv.classList.add('log-message');
+                logDiv.textContent = message;
+
+                container.innerHTML = '';
+                container.appendChild(logDiv);
+                container.style.display = 'block';
+
+                setTimeout(() => {
+                    logDiv.remove();
+                    container.style.display = 'none';
+                }, 3000);
+            }
+
             function updateChartData() {
-                // Vider les anciennes données
                 chartData.labels = [];
                 chartData.datasets[0].data = [];
 
-                // Mettre à jour les labels et les données
                 Object.keys(sensorDataMap).forEach(sensorId => {
                     const sensorData = sensorDataMap[sensorId];
-                    chartData.labels.push('Capteur ' + sensorId); // Utilisez 'Capteur ' suivi de sensorId
-                    chartData.datasets[0].data.push(sensorData.temperature); // Assurez-vous que le champ 'temperature' existe dans les données
+                    chartData.labels.push('Capteur ' + sensorId);
+                    chartData.datasets[0].data.push(sensorData.temperature);
                 });
 
-                // Mettre à jour le graphique avec les nouvelles données
                 myChart.update();
             }
 
-            // Comparer deux tableaux pour vérifier qu'ils sont identiques
-            function arraysEqual(a, b) {
-                return JSON.stringify(a) === JSON.stringify(b);
-            }
-
-            ws.onclose = function(e) {
+            ws.onclose = function (e) {
                 console.error('Connexion fermée !', e);
             };
 
-            ws.onerror = function(error) {
+            ws.onerror = function (error) {
                 console.error('Erreur WebSocket:', error);
             };
         });
     </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
     <h1>Données des Capteurs</h1>
+    <div id="log-message-container"></div>
     <div class="container">
         <h1>Dashboard</h1>
-
-        <!-- Canvas pour afficher le graphique -->
         <canvas id="myChart" width="400" height="200"></canvas>
-
-        <!-- Intégrer Chart.js -->
     </div>
 </body>
+
 </html>

@@ -43,9 +43,11 @@ class SensorConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         self.room_group_name = "sensor_data"
+        self.logs_group_name = "logs_group"
 
         # Créer un groupe où tous les clients écoutent
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+        await self.channel_layer.group_add(self.logs_group_name, self.channel_name)
         await self.accept()
 
         # Démarrer l'abonnement aux données MQTT
@@ -62,9 +64,11 @@ class SensorConsumer(AsyncWebsocketConsumer):
 
         # Connexion au broker MQTT
         self.mqtt_client.connect(BROKER, PORT)
-        self.model = joblib.load("sensor_temperature_model.pkl")
+        self.attrs = ["temperature", "humidity", "luminosity", "energy", "pressure"]
+        self.models = {}
+        for attr in self.attrs:
+            self.models[attr] = joblib.load(f"sensor_{attr}_model.pkl")
         self.mqtt_client.subscribe(TOPIC)
-
         # Démarrer l'écoute MQTT
         self.mqtt_client.loop_start()
 
@@ -78,22 +82,31 @@ class SensorConsumer(AsyncWebsocketConsumer):
             if not sensor_id:
                 logger.info(f"Aucun sensor_id trouvé dans le message : {sensor_data}")
                 return
-            self.detect_anomaly_or_predict(sensor_data.get("temperature"),sensor_data.get('pressure'),sensor_data.get('luminosity'),sensor_data.get('energy'),sensor_data.get('humidity'))
-
-            # Utilisation de async_to_sync pour appeler la méthode asynchrone du consumer
+            temperature = sensor_data.get("temperature")
+            pressure = sensor_data.get("pressure")
+            luminosity = sensor_data.get("luminosity")
+            energy = sensor_data.get("energy")
+            humidity = sensor_data.get("humidity")
+            if None in [temperature, pressure, luminosity, energy, humidity]:
+                logger.error(f"Certaines données manquent : {sensor_data}")
+                return
+            self.detect_anomaly_or_predict(sensor_id,
+                temperature, pressure, luminosity, energy, humidity
+            )  # Utilisation de async_to_sync pour appeler la méthode asynchrone du consumer
             async_to_sync(self.send_sensor_data_to_group)(sensor_id, sensor_data)
 
         except json.JSONDecodeError:
             logger.error(f"Erreur de décodage du message JSON: {message}")
 
-    def detect_anomaly_or_predict(self, temperature, pressure, luminosity, energy, humidity):
+    def detect_anomaly_or_predict(
+        self, sensor_id,temperature, pressure, luminosity, energy, humidity
+    ):
         """Effectue une prédiction avec le modèle ou détecte une anomalie"""
         from datetime import datetime, timedelta
 
         # Préparer l'entrée pour le modèle (timestamp dans 10 secondes)
         future_timestamp = datetime.now() + timedelta(seconds=10)
 
-        # Construire le DataFrame d'entrée avec les futures
         df = pd.DataFrame(
             [
                 {
@@ -110,14 +123,12 @@ class SensorConsumer(AsyncWebsocketConsumer):
                 }
             ]
         )
-
-        # Définir les colonnes utilisées pour la prédiction
         X = df[
             [
                 "year",
-            "month",
+                "month",
                 "day",
-            "hour",
+                "hour",
                 "minute",
                 "pressure",
                 "luminosity",
@@ -125,28 +136,24 @@ class SensorConsumer(AsyncWebsocketConsumer):
                 "humidity",
             ]
         ]
-
-        # Faire une prédiction pour dans 10 secondes
-        predicted_temperature = self.model.predict(X)[0]
-
-        # Logger la prédiction
+        predicted_data = self.models.get("temperature").predict(X)[0]
         logger.info(
-            f"Température prédite pour dans 10 secondes ({future_timestamp}):     {predicted_temperature:.2f}°C"
+            f"temperature prédite pour dans 10 secondes ({future_timestamp}):{predicted_data}"
         )
+        self.check_temperature(sensor_id,predicted_data)
 
-        # Vérifier si la température prédite est anormale
-        self.check_temperature(predicted_temperature)
-
-        return predicted_temperature
-
-    def check_temperature(self, temperature):
+    def check_temperature(self ,sensor_id,temperature):
+        # final_dict=dict_1.copy()
+        # del final_dict["temperature"]
+        log = ""
         if temperature < 10:
             log = "une panne de chauffage ou un environnement inadéquat"
         elif temperature > 60:
             log = " un risque d'équipement en surchauffe ou d'incendie"
-            logger.warning(
-                    f"Anomalie détectée : La Température prédite dans 10s sera ({temperature}°C) qui peut indiquer {log}.)"
-                )
+
+        if temperature<10 or temperature >60:
+            message = f"Anomalie détectée au niveau du capteur N°{sensor_id} : La Température prédite dans 10s sera ({temperature:.2f}°C) qui peut indiquer {log}.)"
+            async_to_sync(self.send_log_message_to_group)(message)
 
     def check_pressure(self, pression):
         if (
@@ -196,6 +203,7 @@ class SensorConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        await self.channel_layer.group_discard(self.logs_group_name, self.channel_name)
         self.mqtt_client.loop_stop()
 
     async def receive(self, text_data):
@@ -218,11 +226,26 @@ class SensorConsumer(AsyncWebsocketConsumer):
         sensor_data = event["sensor_data"]
         sensor_id = event["sensor_id"]
         await self.send(
-            text_data=json.dumps({"sensor_id": sensor_id, "sensor_data": sensor_data})
+            text_data=json.dumps(
+                {
+                    "sensor_id": sensor_id,
+                    "sensor_data": sensor_data,
+                    "group": "sensor_data",
+                }
+            )
         )
-
-
 
     async def send_log_message(self, event):
         message = event["message"]
-        await self.send(text_data=json.dumps({"message": message}))
+        await self.send(
+            text_data=json.dumps(
+                {"message": message, "group": "log_message"}
+            )
+        )
+
+    async def send_log_message_to_group(self,message):
+        """Envoie un log au groupe logs_group"""
+        await self.channel_layer.group_send(
+            self.logs_group_name,
+            {"type": "send_log_message", "message": message}
+        )
