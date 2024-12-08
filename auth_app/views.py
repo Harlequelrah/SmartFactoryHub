@@ -25,7 +25,7 @@ def connexion(request):
         user = authenticate(request, username=username , password= password)
         if user is not None:
             login(request, user)
-            return redirect('accueil')
+            return redirect('sensor:sensor_dashboard')
         else:
             messages.error(request, 'Nom d\'utilisateur ou mot de passe incorrect.')
     return  render(request, 'connexion.html')      

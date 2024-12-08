@@ -1,103 +1,132 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capteurs Dynamiques</title>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/');  // Connexion WebSocket pour les données des capteurs
-            const sensorDataMap = {}; // Stocker les données par sensor_id
-            let attributes = ['temperature', 'pressure', 'energy', 'luminosity', 'humidity']; // Liste des attributs sans 'sensor_id'
-
-            const chartData = {
-                labels: [], // Les capteurs (pour les labels sur l'axe des x)
-                datasets: [{
-                    label: 'Temperature',
-                    data: [], // Données des barres
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            };
-
-            const ctx = document.getElementById('myChart').getContext('2d');
-            const myChart = new Chart(ctx, {
-                type: 'bar',
-                data: chartData,
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-
-            // Connexion réussie au WebSocket
-            ws.onopen = function() {
-                console.log("Connexion WebSocket établie");
-            };
-
-            // Réception de données des capteurs
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                const sensorData = data.sensor_data;  // Les données du capteur, sans le sensor_id
-                console.log(sensorData);
-
-                // Mettre à jour les données du capteur dans la map
-                if (sensorData) {
-                    const sensorId = data.sensor_id;  // Récupérer le sensor_id
-                    sensorDataMap[sensorId] = sensorData; // Met à jour les données du capteur dans le dictionnaire
-                    updateChartData();
-                }
-            };
-
-            // Fonction pour mettre à jour le graphique avec les températures des capteurs
-            function updateChartData() {
-                // Vider les anciennes données
-                chartData.labels = [];
-                chartData.datasets[0].data = [];
-
-                // Mettre à jour les labels et les données
-                Object.keys(sensorDataMap).forEach(sensorId => {
-                    const sensorData = sensorDataMap[sensorId];
-                    chartData.labels.push('Capteur ' + sensorId); // Utilisez 'Capteur ' suivi de sensorId
-                    chartData.datasets[0].data.push(sensorData.temperature); // Assurez-vous que le champ 'temperature' existe dans les données
-                });
-
-                // Mettre à jour le graphique avec les nouvelles données
-                myChart.update();
-            }
-
-            // Comparer deux tableaux pour vérifier qu'ils sont identiques
-            function arraysEqual(a, b) {
-                return JSON.stringify(a) === JSON.stringify(b);
-            }
-
-            ws.onclose = function(e) {
-                console.error('Connexion fermée !', e);
-            };
-
-            ws.onerror = function(error) {
-                console.error('Erreur WebSocket:', error);
-            };
-        });
-    </script>
-
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
-    <h1>Données des Capteurs</h1>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="#" class="navbar-link">Inspection</a>
+            <a href="#" class="navbar-link">États des machines</a>
+            <a href="#" class="navbar-link">Connexion</a>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
     <div class="container">
         <h1>Dashboard</h1>
 
-        <!-- Canvas pour afficher le graphique -->
-        <canvas id="myChart" width="400" height="200"></canvas>
-
-        <!-- Intégrer Chart.js -->
+        <!-- Conteneur pour les graphiques -->
+        <div class="charts-row">
+            <div class="chart-container">
+                <canvas id="chart1"></canvas>
+                <div class="chart-label">KP50-Crimson</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="chart2"></canvas>
+                <div class="chart-label">Riley KP030-Seal</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="chart3"></canvas>
+                <div class="chart-label">Brown sky-450</div>
+            </div>
+        </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/'); // WebSocket pour les données des capteurs
+            const sensorDataMap = {}; // Stocke les données par sensor_id
+
+            // Configurer les trois graphiques
+            const chartConfigs = [
+                {
+                    elementId: 'chart1',
+                    label: 'Temperature',
+                    dataKey: 'temperature',
+                    bgColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)'
+                },
+                {
+                    elementId: 'chart2',
+                    label: 'Pressure',
+                    dataKey: 'pressure',
+                    bgColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)'
+                },
+                {
+                    elementId: 'chart3',
+                    label: 'Humidity',
+                    dataKey: 'humidity',
+                    bgColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)'
+                }
+            ];
+
+            const charts = chartConfigs.map(config => {
+                const ctx = document.getElementById(config.elementId).getContext('2d');
+                return new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: config.label,
+                            data: [],
+                            backgroundColor: config.bgColor,
+                            borderColor: config.borderColor,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Mise à jour des graphiques
+            function updateCharts() {
+                Object.keys(sensorDataMap).forEach(sensorId => {
+                    const sensorData = sensorDataMap[sensorId];
+                    charts.forEach((chart, index) => {
+                        const key = chartConfigs[index].dataKey;
+                        chart.data.labels = Object.keys(sensorDataMap).map(id => `Capteur ${id}`);
+                        chart.data.datasets[0].data = Object.keys(sensorDataMap).map(id => sensorDataMap[id][key]);
+                        chart.update();
+                    });
+                });
+            }
+
+            // Réception des données des capteurs via WebSocket
+            ws.onmessage = event => {
+                const data = JSON.parse(event.data);
+                const sensorId = data.sensor_id;
+                const sensorData = data.sensor_data;
+
+                if (sensorId && sensorData) {
+                    sensorDataMap[sensorId] = sensorData;
+                    updateCharts();
+                }
+            };
+
+            ws.onopen = () => console.log("Connexion WebSocket établie");
+            ws.onclose = e => console.error('Connexion WebSocket fermée', e);
+            ws.onerror = error => console.error('Erreur WebSocket', error);
+        });
+    </script>
 </body>
+
 </html>
