@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from sensor.routing import websocket_urlpatterns
-from sensor.views import sensor_data_view,sensors_data_view,sensor_log_view,sensors_dashboard_view
+from sensor.views import sensor_data_view, sensor_dashboard,sensors_data_view,sensor_log_view
 from auth_app import views
 
 urlpatterns = [
@@ -9,10 +9,7 @@ urlpatterns = [
     path(
         "ws/", include(websocket_urlpatterns)
     ),  # Assurez-vous que cette ligne est présente
-    path("sensor_data/", sensor_data_view, name="sensor_data"),
-    # path("sensor_log/", sensor_log_view, name="sensor_log"),
-    path("sensor_dashboard/", sensors_dashboard_view, name="sensor_dashboard"),
-    path("sensors_data/", sensors_data_view, name="sensors_data"),
+    path('sensor/', include('sensor.urls')),
     path("inscription/", views.inscription, name="inscription"),
     path("connexion/", views.connexion, name="connexion"),
     path("accueil/", views.accueil, name="accueil"),

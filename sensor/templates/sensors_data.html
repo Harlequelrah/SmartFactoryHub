@@ -5,6 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Capteurs Dynamiques</title>
     <style>
 #log-message-container {
@@ -143,7 +144,98 @@
     <div class="container">
         <h1>Dashboard</h1>
         <canvas id="myChart" width="400" height="200"></canvas>
+
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/'); // WebSocket pour les données des capteurs
+            const sensorDataMap = {}; // Stocke les données par sensor_id
+
+            // Configurer les trois graphiques
+            const chartConfigs = [
+                {
+                    elementId: 'chart1',
+                    label: 'Temperature',
+                    dataKey: 'temperature',
+                    bgColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)'
+                },
+                {
+                    elementId: 'chart2',
+                    label: 'Pressure',
+                    dataKey: 'pressure',
+                    bgColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)'
+                },
+                {
+                    elementId: 'chart3',
+                    label: 'Humidity',
+                    dataKey: 'humidity',
+                    bgColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)'
+                }
+            ];
+
+            const charts = chartConfigs.map(config => {
+                const ctx = document.getElementById(config.elementId).getContext('2d');
+                return new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: config.label,
+                            data: [],
+                            backgroundColor: config.bgColor,
+                            borderColor: config.borderColor,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Mise à jour des graphiques
+            function updateCharts() {
+                Object.keys(sensorDataMap).forEach(sensorId => {
+                    const sensorData = sensorDataMap[sensorId];
+                    charts.forEach((chart, index) => {
+                        const key = chartConfigs[index].dataKey;
+                        chart.data.labels = Object.keys(sensorDataMap).map(id => `Capteur ${id}`);
+                        chart.data.datasets[0].data = Object.keys(sensorDataMap).map(id => sensorDataMap[id][key]);
+                        chart.update();
+                    });
+                });
+            }
+
+            // Réception des données des capteurs via WebSocket
+            ws.onmessage = event => {
+                const data = JSON.parse(event.data);
+                const sensorId = data.sensor_id;
+                const sensorData = data.sensor_data;
+
+                if (sensorId && sensorData) {
+                    sensorDataMap[sensorId] = sensorData;
+                    updateCharts();
+                }
+            };
+
+            ws.onopen = () => console.log("Connexion WebSocket établie");
+            ws.onclose = e => console.error('Connexion WebSocket fermée', e);
+            ws.onerror = error => console.error('Erreur WebSocket', error);
+        });
+    </script>
 </body>
 
+
 </html>
+
+

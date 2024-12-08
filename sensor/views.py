@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
 
 
 def sensor_data_view(request):
@@ -11,5 +12,7 @@ def sensor_log_view(request):
 
 def sensors_data_view(request):
     return render(request, "sensors_data.html")
-def sensors_dashboard_view(request):
+
+@login_required
+def sensor_dashboard(request):
     return render(request, "sensor_dashboard.html")

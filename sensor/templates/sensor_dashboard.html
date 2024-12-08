@@ -6,43 +6,184 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
+    <!-- Navbar -->
+    <nav class="navbar" style="background-color: #333; padding: 10px; border-radius: 30px;">
+        <div class="navbar-container"
+            style="display: flex; justify-content: space-around; align-items: center; max-width: 1200px; margin: 0 auto;">
+            <a href="#" class="navbar-link"
+                style="color: white; text-decoration: none; font-size: 18px; padding: 10px 15px;">Inspection</a>
+            <a href="#" class="navbar-link"
+                style="color: white; text-decoration: none; font-size: 18px; padding: 10px 15px;">Inspection</a>
+            <a href="#" class="navbar-link"
+                style="color: white; text-decoration: none; font-size: 18px; padding: 10px 15px;">États des machines</a>
+            {% if user.is_authenticated %}
+            <div class="dropdown" style="position: relative;">
+                <button class="navbar-link"
+                    style="color: white; font-size: 18px; padding: 10px 15px; background: none; border: none; cursor: pointer; text-decoration: underline;">
+                    {{ user.username }} <i class="arrow down"></i>
+                </button>
+                <div class="dropdown-content"
+                    style="position: absolute; background-color: #333; min-width: 160px; display: none; z-index: 1;">
+                    <a href="{% url 'deconnexion' %}"
+                        style="color: white; text-decoration: none; padding: 10px 15px; display: block;">Déconnexion</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <script>
+        // Script pour afficher et masquer le menu déroulant
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropdownButton = document.querySelector('.navbar-link');
+            const dropdownContent = document.querySelector('.dropdown-content');
+
+            dropdownButton.addEventListener('click', () => {
+                console.log("Hello");
+                dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
+            });
+
+            // Fermer le menu si l'utilisateur clique en dehors
+            window.addEventListener('click', (event) => {
+                if (!dropdownButton.contains(event.target)) {
+                    dropdownContent.style.display = 'none';
+                }
+            });
+        });
+    </script>
+
+
+    <!-- Main Container -->
     <div class="container">
         <h1>Dashboard</h1>
 
-        <!-- Canvas pour afficher le graphique -->
-        <canvas id="myChart" width="400" height="200"></canvas>
+        <!-- Conteneur pour les graphiques -->
+        <div class="charts-row"
+            style="display: flex; flex-wrap: wrap; justify-content: space-around; align-items: center; margin-top: 20px;">
+            <div class="chart-container" style="width: 45%; height: 500px; text-align: center; margin: 10px;">
+                <canvas id="chart1" style="width: 100%; height: 100%;"></canvas>
+            </div>
+            <div class="chart-container" style="width: 45%; height: 500px; text-align: center; margin: 10px;">
+                <canvas id="chart2" style="width: 100%; height: 100%;"></canvas>
+            </div>
+            <div class="chart-container" style="width: 45%; height: 500px; text-align: center; margin: 10px;">
+                <canvas id="chart3" style="width: 100%; height: 100%;"></canvas>
+            </div>
+            <div class="chart-container" style="width: 45%; height: 500px; text-align: center; margin: 10px;">
+                <canvas id="chart4" style="width: 100%; height: 100%;"></canvas>
+            </div>
+            <div class="chart-container" style="width: 45%; height: 500px; text-align: center; margin: 10px;">
+                <canvas id="chart5" style="width: 100%; height: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
 
-        <!-- Intégrer Chart.js -->
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script>
-            // Configuration du graphique
-            var ctx = document.getElementById('myChart').getContext('2d');
-            var myChart = new Chart(ctx, {
-                type: 'bar', // Type de graphique (barres)
-                data: {
-                    labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'], // Labels sur l'axe des x
-                    datasets: [{
-                        label: 'Sales',
-                        data: [12, 19, 3, 5, 2, 3, 7], // Données des barres
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/'); // WebSocket pour les données des capteurs
+            const sensorDataMap = {}; // Stocke les données par sensor_id
+
+            // Configurer les trois graphiques
+            const chartConfigs = [
+                {
+                    elementId: 'chart1',
+                    label: 'Temperature',
+                    dataKey: 'temperature',
+                    bgColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)'
                 },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
+                {
+                    elementId: 'chart2',
+                    label: 'Pressure',
+                    dataKey: 'pressure',
+                    bgColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)'
+                },
+                {
+                    elementId: 'chart3',
+                    label: 'Humidity',
+                    dataKey: 'humidity',
+                    bgColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)'
+                },
+                {
+                    elementId: 'chart4',
+                    label: 'Energy',
+                    dataKey: 'energy',
+                    bgColor: 'rgba(153, 102, 255, 0.2)',
+                    borderColor: 'rgba(153, 102, 255, 1)'
+                },
+                {
+                    elementId: 'chart5',
+                    label: 'Luminosity',
+                    dataKey: 'luminosity',
+                    bgColor: 'rgba(255, 206, 86, 0.2)',
+                    borderColor: 'rgba(255, 206, 86, 1)'
+                }
+            ];
+
+
+            const charts = chartConfigs.map(config => {
+                const ctx = document.getElementById(config.elementId).getContext('2d');
+                return new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: config.label,
+                            data: [],
+                            backgroundColor: config.bgColor,
+                            borderColor: config.borderColor,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
                         }
                     }
-                }
+                });
             });
-        </script>
-    </div>
+
+            // Mise à jour des graphiques
+            function updateCharts() {
+                Object.keys(sensorDataMap).forEach(sensorId => {
+                    const sensorData = sensorDataMap[sensorId];
+                    charts.forEach((chart, index) => {
+                        const key = chartConfigs[index].dataKey;
+                        chart.data.labels = Object.keys(sensorDataMap).map(id => `Capteur ${id}`);
+                        chart.data.datasets[0].data = Object.keys(sensorDataMap).map(id => sensorDataMap[id][key]);
+                        chart.update();
+                    });
+                });
+            }
+
+            // Réception des données des capteurs via WebSocket
+            ws.onmessage = event => {
+                const data = JSON.parse(event.data);
+                const sensorId = data.sensor_id;
+                const sensorData = data.sensor_data;
+
+                if (sensorId && sensorData) {
+                    sensorDataMap[sensorId] = sensorData;
+                    updateCharts();
+                }
+            };
+
+            ws.onopen = () => console.log("Connexion WebSocket établie");
+            ws.onclose = e => console.error('Connexion WebSocket fermée', e);
+            ws.onerror = error => console.error('Erreur WebSocket', error);
+        });
+    </script>
 </body>
 
 </html>

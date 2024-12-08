@@ -194,3 +194,9 @@
 2024-12-02 18:13:30,756 - django.request - WARNING - Not Found: /ws/logs/
 2024-12-02 18:13:30,941 - django.request - WARNING - Not Found: /ws/logs/
 2024-12-02 18:13:31,162 - django.request - WARNING - Not Found: /ws/logs/
+2024-12-08 16:59:31,104 - django.utils.autoreload - INFO - E:\Troisieme_annee\BIG DATA & NOSQL\SmartFactoryHub\SmartFactoryHub\settings.py changed, reloading.
+2024-12-08 17:00:23,070 - django.request - WARNING - Not Found: /favicon.ico
+2024-12-08 17:48:16,888 - django.request - WARNING - Not Found: /ws/sensor_data/
+2024-12-08 17:48:28,795 - django.request - WARNING - Not Found: /ws/sensor_data/
+2024-12-08 17:49:10,348 - django.request - WARNING - Not Found: /sensors_dashboard/
+2024-12-08 17:49:15,110 - django.request - WARNING - Not Found: /ws/sensor_data/
