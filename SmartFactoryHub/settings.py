@@ -80,15 +80,14 @@ CHANNEL_LAYERS = {
     },
 }
 
-from .secret import username, password
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'smartfactoryhub',  # Remplace par le nom de ta base de données
-        'USER': username,  # Remplace par ton utilisateur MySQL
-        'PASSWORD': password, # Remplace par ton mot de passe MySQL
+        'USER': 'root',  # Remplace par ton utilisateur MySQL
+        'PASSWORD': '', # Remplace par ton mot de passe MySQL
         'HOST': 'localhost',  # Si MySQL est sur la même machine
         'PORT': '3306',  # Port par défaut pour MySQL
     },
