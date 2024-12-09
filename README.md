@@ -17,7 +17,7 @@ Il a été question d'utiliser un broker mqtt pour simuler des données de capte
 
 # Installation
 
-- Avec Github : git clone https://github.com/Harlequelrah/Library-harlequelrah_fastapi"
+- Avec Github : git clone https://github.com/Harlequelrah/SmartFactoryHub
 
 
 
