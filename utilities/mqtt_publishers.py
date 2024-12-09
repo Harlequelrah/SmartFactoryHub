@@ -54,6 +54,6 @@ while True:
         message = create_sensor(i)
         client.publish(TOPIC + str(i), json.dumps(message))
         print(f"Message publié : {message}")
-        # time.sleep(3)
+    time.sleep(3)
 
 #     time.sleep(5)  # Attendre 5 secondes avant d'envoyer un autre message

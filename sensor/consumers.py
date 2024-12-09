@@ -8,11 +8,9 @@ import pandas as pd
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import async_to_sync
 import logging
-from .log_consumers import WebSocketHandler
 
-# from sensor.models import Sensor
-# from sensor.models import Machine
-# Configuration du client MQTT
+
+
 BROKER = "broker.hivemq.com"
 PORT = 8883
 TOPIC = "SmartFactoryHub_sensor/#"  # Utilise un wildcard pour écouter plusieurs topics (ex: sensor1, sensor2)
@@ -22,7 +20,6 @@ logging.basicConfig(
     handlers=[
         logging.FileHandler("sensor_logs.log"),
         logging.StreamHandler(),
-        # WebSocketHandler(),  # Nouveau handler pour WebSocket
     ],
 )
 
@@ -143,8 +140,6 @@ class SensorConsumer(AsyncWebsocketConsumer):
         self.check_temperature(sensor_id,predicted_data)
 
     def check_temperature(self ,sensor_id,temperature):
-        # final_dict=dict_1.copy()
-        # del final_dict["temperature"]
         log = ""
         if temperature < 10:
             log = "une panne de chauffage ou un environnement inadéquat"
