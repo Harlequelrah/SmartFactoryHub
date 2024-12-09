@@ -64,15 +64,11 @@
         <div class="navbar-container"
             style="display: flex; justify-content: space-around; align-items: center; max-width: 1200px; margin: 0 auto;">
             <a href="#" class="navbar-link"
-                style="color: white; text-decoration: none; font-size: 18px; padding: 10px 15px;">Inspection</a>
-            <a href="#" class="navbar-link"
-                style="color: white; text-decoration: none; font-size: 18px; padding: 10px 15px;">Inspection</a>
-            <a href="#" class="navbar-link"
-                style="color: white; text-decoration: none; font-size: 18px; padding: 10px 15px;">États des machines</a>
+                style="color: white; text-decoration: none; font-size: 18px; padding: 10px 15px; text-decoration: underline;">États des machines</a>
             {% if user.is_authenticated %}
             <div class="dropdown" style="position: relative;">
                 <button class="navbar-link"
-                    style="color: white; font-size: 18px; padding: 10px 15px; background: none; border: none; cursor: pointer; text-decoration: underline;">
+                    style="color: white; font-size: 18px; padding: 10px 15px; background: none; border: none; cursor: pointer;">
                     {{ user.username }} <i class="arrow down"></i>
                 </button>
                 <div class="dropdown-content"
@@ -133,7 +129,7 @@
 
     <!-- Conteneur des logs -->
     <div id="log-message-container"></div>
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/'); // WebSocket pour les données des capteurs
@@ -239,10 +235,15 @@
                 const data = JSON.parse(event.data);
                 const sensorId = data.sensor_id;
                 const sensorData = data.sensor_data;
+                const group=data.group;
 
-                if (sensorId && sensorData) {
+                if ( (sensorId && sensorData) && (group==='sensor_data')) {
                     sensorDataMap[sensorId] = sensorData;
                     updateCharts();
+                }
+                else if (group==='log_message')
+                {
+                    showLogMessage(data.message);
                 }
             };
 
