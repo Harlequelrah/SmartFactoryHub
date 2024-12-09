@@ -5,237 +5,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Capteurs Dynamiques</title>
-    <style>
-#log-message-container {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1000;
-    display: none;
-}
-
-.log-message {
-    padding: 1em 2em;
-    border-radius: 8px;
-    font-size: 16px;
-    text-align: center;
-    background-color: #f8d7da; /* Couleur de fond d'erreur */
-    color: #721c24; /* Couleur du texte */
-    border: 1px solid #f5c6cb; /* Bordure d'erreur */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    opacity: 0;
-    animation: fade-in-out 3s forwards;
-}
-
-@keyframes fade-in-out {
-    0% {
-        opacity: 0;
-    }
-    10% {
-        opacity: 1;
-    }
-    90% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 0;
-    }
-}
-
-    </style>
+    <title>Dashboard Capteurs</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        #log-message-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            display: none;
+        }
+
+        .log-message {
+            padding: 1em 2em;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: center;
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            animation: fade-in-out 3s forwards;
+        }
+
+        @keyframes fade-in-out {
+            0% {
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar" style="background-color: #333; padding: 10px; border-radius: 30px;">
+        <div class="navbar-container"
+            style="display: flex; justify-content: space-around; align-items: center; max-width: 1200px; margin: 0 auto;">
+            <a href="#" class="navbar-link"
+                style="color: white; text-decoration: none; font-size: 18px; padding: 10px 15px;">Inspection</a>
+            <a href="#" class="navbar-link"
+                style="color: white; text-decoration: none; font-size: 18px; padding: 10px 15px;">États des machines</a>
+            {% if user.is_authenticated %}
+            <div class="dropdown" style="position: relative;">
+                <button class="navbar-link"
+                    style="color: white; font-size: 18px; padding: 10px 15px; background: none; border: none; cursor: pointer;">
+                    {{ user.username }} <i class="arrow down"></i>
+                </button>
+                <div class="dropdown-content"
+                    style="position: absolute; background-color: #333; min-width: 160px; display: none; z-index: 1;">
+                    <a href="{% url 'deconnexion' %}"
+                        style="color: white; text-decoration: none; padding: 10px 15px; display: block;">Déconnexion</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Conteneur des graphiques -->
+    <div class="container">
+        <h1>Dashboard Capteurs</h1>
+        <div class="charts-row" style="display: flex; flex-wrap: wrap; justify-content: space-around;">
+            <div class="chart-container" style="width: 45%; height: 500px; margin: 10px;">
+                <canvas id="chart1"></canvas>
+            </div>
+            <div class="chart-container" style="width: 45%; height: 500px; margin: 10px;">
+                <canvas id="chart2"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteneur des logs -->
+    <div id="log-message-container"></div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/');
             const sensorDataMap = {};
-            let attributes = ['temperature', 'pressure', 'energy', 'luminosity', 'humidity'];
+            const attributes = ['temperature', 'pressure'];
 
-            const chartData = {
-                labels: [],
-                datasets: [{
-                    label: 'Temperature',
-                    data: [],
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            };
-
-            const ctx = document.getElementById('myChart').getContext('2d');
-            const myChart = new Chart(ctx, {
-                type: 'bar',
-                data: chartData,
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-
-            ws.onopen = function () {
-                console.log("Connexion WebSocket établie");
-            };
-
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                const group = data.group;
-
-                if (group === 'sensor_data') {
-                    const sensorData = data.sensor_data;
-
-                    if (sensorData) {
-                        const sensorId = data.sensor_id;
-                        sensorDataMap[sensorId] = sensorData;
-                        updateChartData();
-                    }
-                } else if (group === "log_message") {
-                    showLogMessage(data.message);
-                }
-            };
-
-            function showLogMessage(message) {
-                const container = document.getElementById('log-message-container');
-                const logDiv = document.createElement('div');
-                logDiv.classList.add('log-message');
-                logDiv.textContent = message;
-
-                container.innerHTML = '';
-                container.appendChild(logDiv);
-                container.style.display = 'block';
-
-                setTimeout(() => {
-                    logDiv.remove();
-                    container.style.display = 'none';
-                }, 3000);
-            }
-
-            function updateChartData() {
-                chartData.labels = [];
-                chartData.datasets[0].data = [];
-
-                Object.keys(sensorDataMap).forEach(sensorId => {
-                    const sensorData = sensorDataMap[sensorId];
-                    chartData.labels.push('Capteur ' + sensorId);
-                    chartData.datasets[0].data.push(sensorData.temperature);
-                });
-
-                myChart.update();
-            }
-
-            ws.onclose = function (e) {
-                console.error('Connexion fermée !', e);
-            };
-
-            ws.onerror = function (error) {
-                console.error('Erreur WebSocket:', error);
-            };
-        });
-    </script>
-</head>
-
-<body>
-    <h1>Données des Capteurs</h1>
-    <div id="log-message-container"></div>
-    <div class="container">
-        <h1>Dashboard</h1>
-        <canvas id="myChart" width="400" height="200"></canvas>
-
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/'); // WebSocket pour les données des capteurs
-            const sensorDataMap = {}; // Stocke les données par sensor_id
-
-            // Configurer les trois graphiques
             const chartConfigs = [
-                {
-                    elementId: 'chart1',
-                    label: 'Temperature',
-                    dataKey: 'temperature',
-                    bgColor: 'rgba(75, 192, 192, 0.2)',
-                    borderColor: 'rgba(75, 192, 192, 1)'
-                },
-                {
-                    elementId: 'chart2',
-                    label: 'Pressure',
-                    dataKey: 'pressure',
-                    bgColor: 'rgba(255, 99, 132, 0.2)',
-                    borderColor: 'rgba(255, 99, 132, 1)'
-                },
-                {
-                    elementId: 'chart3',
-                    label: 'Humidity',
-                    dataKey: 'humidity',
-                    bgColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)'
-                }
+                { id: 'chart1', label: 'Temperature', key: 'temperature', bgColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgba(54, 162, 235, 1)' },
+                { id: 'chart2', label: 'Pressure', key: 'pressure', bgColor: 'rgba(255, 99, 132, 0.2)', borderColor: 'rgba(255, 99, 132, 1)' }
             ];
 
             const charts = chartConfigs.map(config => {
-                const ctx = document.getElementById(config.elementId).getContext('2d');
+                const ctx = document.getElementById(config.id).getContext('2d');
                 return new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: [],
-                        datasets: [{
-                            label: config.label,
-                            data: [],
-                            backgroundColor: config.bgColor,
-                            borderColor: config.borderColor,
-                            borderWidth: 1
-                        }]
+                        datasets: [{ label: config.label, data: [], backgroundColor: config.bgColor, borderColor: config.borderColor, borderWidth: 1 }]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
+                        scales: { y: { beginAtZero: true } },
+                        responsive: true
                     }
                 });
             });
 
-            // Mise à jour des graphiques
-            function updateCharts() {
-                Object.keys(sensorDataMap).forEach(sensorId => {
-                    const sensorData = sensorDataMap[sensorId];
+            ws.onmessage = event => {
+                const data = JSON.parse(event.data);
+                if (data.group === 'sensor_data') {
+                    const sensorId = data.sensor_id;
+                    sensorDataMap[sensorId] = data.sensor_data;
+
                     charts.forEach((chart, index) => {
-                        const key = chartConfigs[index].dataKey;
-                        chart.data.labels = Object.keys(sensorDataMap).map(id => `Capteur ${id}`);
+                        const key = chartConfigs[index].key;
+                        chart.data.labels = Object.keys(sensorDataMap);
                         chart.data.datasets[0].data = Object.keys(sensorDataMap).map(id => sensorDataMap[id][key]);
                         chart.update();
                     });
-                });
-            }
-
-            // Réception des données des capteurs via WebSocket
-            ws.onmessage = event => {
-                const data = JSON.parse(event.data);
-                const sensorId = data.sensor_id;
-                const sensorData = data.sensor_data;
-
-                if (sensorId && sensorData) {
-                    sensorDataMap[sensorId] = sensorData;
-                    updateCharts();
                 }
             };
 
-            ws.onopen = () => console.log("Connexion WebSocket établie");
-            ws.onclose = e => console.error('Connexion WebSocket fermée', e);
-            ws.onerror = error => console.error('Erreur WebSocket', error);
+            ws.onopen = () => console.log("WebSocket connecté");
+            ws.onerror = e => console.error("Erreur WebSocket", e);
         });
     </script>
 </body>
 
-
 </html>
-
-

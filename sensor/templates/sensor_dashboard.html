@@ -8,6 +8,54 @@
     <title>Dashboard</title>
     <link rel="stylesheet" href="{% static 'styles.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        #log-message-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            display: none;
+        }
+    
+        .log-message {
+            padding: 1em 2em;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: center;
+            background-color: #f8d7da;
+            /* Couleur de fond d'erreur */
+            color: #721c24;
+            /* Couleur du texte */
+            border: 1px solid #f5c6cb;
+            /* Bordure d'erreur */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            animation: fade-in-out 3s forwards;
+        }
+    
+        @keyframes fade-in-out {
+            0% {
+                opacity: 0;
+            }
+    
+            10% {
+                opacity: 1;
+            }
+    
+            90% {
+                opacity: 1;
+            }
+    
+            100% {
+                opacity: 0;
+            }
+        }
+    </style>
+
+
+
 </head>
 
 <body>
@@ -83,6 +131,9 @@
         </div>
     </div>
 
+    <!-- Conteneur des logs -->
+    <div id="log-message-container"></div>
+    
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const ws = new WebSocket('ws://127.0.0.1:8000/ws/sensor_data/'); // WebSocket pour les données des capteurs
@@ -154,6 +205,22 @@
                 });
             });
 
+            function showLogMessage(message) {
+                const container = document.getElementById('log-message-container');
+                const logDiv = document.createElement('div');
+                logDiv.classList.add('log-message');
+                logDiv.textContent = message;
+
+                container.innerHTML = '';
+                container.appendChild(logDiv);
+                container.style.display = 'block';
+
+                setTimeout(() => {
+                    logDiv.remove();
+                    container.style.display = 'none';
+                }, 3000);
+            }
+            
             // Mise à jour des graphiques
             function updateCharts() {
                 Object.keys(sensorDataMap).forEach(sensorId => {
