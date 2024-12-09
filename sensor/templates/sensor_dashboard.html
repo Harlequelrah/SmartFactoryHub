@@ -18,7 +18,7 @@
             z-index: 1000;
             display: none;
         }
-    
+
         .log-message {
             padding: 1em 2em;
             border-radius: 8px;
@@ -34,20 +34,20 @@
             opacity: 0;
             animation: fade-in-out 3s forwards;
         }
-    
+
         @keyframes fade-in-out {
             0% {
                 opacity: 0;
             }
-    
+
             10% {
                 opacity: 1;
             }
-    
+
             90% {
                 opacity: 1;
             }
-    
+
             100% {
                 opacity: 0;
             }
@@ -214,9 +214,9 @@
                 setTimeout(() => {
                     logDiv.remove();
                     container.style.display = 'none';
-                }, 3000);
+                }, 1000);
             }
-            
+
             // Mise à jour des graphiques
             function updateCharts() {
                 Object.keys(sensorDataMap).forEach(sensorId => {

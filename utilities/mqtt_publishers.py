@@ -23,6 +23,8 @@ client.loop_start()
 
 
 print("Connexion réussie au broker HiveMQ !")
+
+
 def create_sensor(sensor_id):
     temperature = round(random.uniform(0.0, 100.0), 2)
     humidity = round(
@@ -48,10 +50,10 @@ def create_sensor(sensor_id):
 #         time.sleep(3)  # Attendre 5 secondes avant d'envoyer un autre message
 
 while True:
-    for i in range(1,8):
-        message=create_sensor(i)
-        client.publish(TOPIC+str(i), json.dumps(message))
+    for i in range(1, 8):
+        message = create_sensor(i)
+        client.publish(TOPIC + str(i), json.dumps(message))
         print(f"Message publié : {message}")
-    time.sleep(2)
+        # time.sleep(3)
 
 #     time.sleep(5)  # Attendre 5 secondes avant d'envoyer un autre message
